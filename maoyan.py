@@ -1,16 +1,24 @@
 #貓眼url：http://maoyan.com/board/4?offset=0
+'''
+練習作業:
+爬取貓眼電影名稱,主演,上映時間
+使用:進程.lock.正則,
+'''
 import requests
 import re
 import json
 import time
 from multiprocessing import Pool,Manager
 import functools
+
+
 #1)對URL發起HTTP請求http request,得到相應的http response響應，我們所需的數據就在
 #response的響應體裡；
 MAXSLEEPTIME = 3
 MINSLEEPTIME = 1
-STAUS_OK = 200
+STAUS_OK = 200 #成功
 MAX_PAGE_NUM = 10
+##非200的範圍做處理
 SERVER_ERROR_MIN = 500
 SERVER_ERROR_MAX = 600
 CLIENT_ERROR_MIN = 400
@@ -37,6 +45,7 @@ def get_one_page(URL, number = 5):
     return None
 #2)用正則表達式，XPath，BS4精確的獲取數據；
 def parse_one_page(html):
+    #抓取資料
     pattern = re.compile('<p class="name">.*?title="([\s\S]*?)"[\s\S]*?<p class="star">([\s\S]*?)</p>[\s\S]*?<p class="releasetime">([\s\S]*?)</p>')
     items = re.findall(pattern, html)
     for it in items:
@@ -51,6 +60,7 @@ def parse_one_page(html):
 def write_to_file(item):
     with open("貓眼.txt","a",encoding="utf-8") as f:
       f.write(json.dumps(item,ensure_ascii=False)+'\n')
+
 
 #4)控制整個爬取一頁的流程
 def crawl_one_page(lock, offset):
@@ -70,8 +80,8 @@ if __name__ == "__main__":
     manager = Manager()
     lock = manager.Lock()
     
-    #使用偏函數對原來的函數進行一層包裝,得到一個包裝後的函數
-    #使用包裝有傳參的優先順序問題:最優先傳入lock這個參數,在函式中,lock要第一個
+    #**使用偏函數對原來的函數進行一層包裝,得到一個包裝後的函數**
+    #**使用包裝有傳參的優先順序問題:最優先傳入lock這個參數,在函式中,lock要第一個**
     partial_Crawl = functools.partial(crawl_one_page, lock)
 
     pool = Pool()#創建進程
